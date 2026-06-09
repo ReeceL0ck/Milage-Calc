@@ -1,7 +1,11 @@
 use std::env;
 use google_maps::prelude::*;
+// use serde::{Serialize, Deserialize};
+// use serde_json::{Result, Value};
 
 const OFFICE_MILAGE: f32 = 2.5;
+
+
 
 #[tokio::main]
 async fn main() -> Result<(), String> {
@@ -17,13 +21,18 @@ async fn main() -> Result<(), String> {
 
     println!("Calculating Distance from {} to {}",postcode_1, postcode_2);
 
-    let distance = calc_distance(postcode_1, postcode_2).await;
+    let distance = calc_distance(postcode_1, postcode_2)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let milage = distance - OFFICE_MILAGE;
+
+    println!("Mileage after office deduction: {:.2}", milage);
 
     Ok(())
 }
 
-#[allow(dead_code)]
-async fn calc_distance(postcode_1: String, postcode_2: String) -> Result<DirectionsResponse, Error> {
+async fn calc_distance(postcode_1: String, postcode_2: String) -> Result<f32,  Box<dyn std::error::Error>> {
     let google_maps_client = google_maps::Client::try_new("AIzaSyAdkoIBlhkV8K8gdYWKhSFEa_on1Oi5BE8")?;
 
     let directions = google_maps_client.directions(
@@ -34,16 +43,27 @@ async fn calc_distance(postcode_1: String, postcode_2: String) -> Result<Directi
     .execute()
     .await?;
 
-    println!("{:#?}", directions);
+    // println!("{:#?}", directions);
 
-    Ok(directions)
-    // Reponse { Routes [ legs [  steps [ Step { Distance }]]]} We need Step Distance
-    // arrival_time: None,
-    // departure_time: None,
-    // distance: DirectionsDistance {
-    //     text: "101 km",
-    //     value: 100675,
-    // },
+    let (_text, distance) = directions
+        .routes
+        .first()
+        .and_then(|route| route.legs.first())
+        .map(|leg| (leg.distance.text.clone(), leg.distance.value))
+        .ok_or("No route found")?;
+
+    let km = distance as f32 / 1000.0;
+
+    // println!("{}", km);
+
+    let miles = convert_km_to_miles(km);
+
+    // println!("Miles : {miles}");
+    Ok(miles)
+
+}
 
 
+fn convert_km_to_miles(km:f32) -> f32 {
+    return km /  1.609;
 }
