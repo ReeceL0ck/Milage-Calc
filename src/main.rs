@@ -33,7 +33,7 @@ async fn main() -> Result<(), String> {
 }
 
 async fn calc_distance(postcode_1: String, postcode_2: String) -> Result<f32,  Box<dyn std::error::Error>> {
-    let google_maps_client = google_maps::Client::try_new("AIzaSyAdkoIBlhkV8K8gdYWKhSFEa_on1Oi5BE8")?;
+    let google_maps_client = google_maps::Client::try_new("")?;
 
     let directions = google_maps_client.directions(
         Location::from_address(postcode_1),
